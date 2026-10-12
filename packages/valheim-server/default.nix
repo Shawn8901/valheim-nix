@@ -1,7 +1,7 @@
 { pkgs }:
 
 let
-  valheim-tools = pkgs.writeShellApplication {
+  valheimTools = pkgs.writeShellApplication {
     name = "valheim-server";
     runtimeInputs = [
       pkgs.steamcmd
@@ -23,8 +23,5 @@ let
   };
 in
 {
-  valheim-server = pkgs.symlinkJoin {
-    name = "valheim-server";
-    paths = [ valheim-tools ];
-  };
+  valheim-server = valheimTools;
 }
