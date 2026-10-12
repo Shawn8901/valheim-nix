@@ -50,9 +50,10 @@ nix build github:<user>/valheim
 | `port` | int | `2456` | Server port |
 | `worldName` | string | `"World"` | Default world name |
 | `password` | string | `"changeme"` | Server password |
-| `passwordFile` | str or null | `null` | Path to file containing the server password (alternative to `password`, recommended for secrets management) |
+| `passwordFile` | str or null | `null` | Path to file containing the server password (alternative to `password`, recommended for secrets management). Pass a string path (e.g. `config.sops.secrets.valheim-password.path`) — a Nix `path` literal would be copied into the world-readable Nix store |
 | `public` | bool | `false` | Whether the server is public |
 | `maxPlayers` | int | `10` | Maximum number of players |
+| `autoUpdate` | bool | `false` | Run a SteamCMD update check on every server start instead of only downloading when missing |
 | `openFirewall` | bool | `false` | Open firewall ports |
 | `enableDebug` | bool | `false` | Enable debug mode |
 | `enableSaveDebug` | bool | `false` | Enable save debugging |
@@ -60,10 +61,10 @@ nix build github:<user>/valheim
 
 ## Firewall Ports
 
-When `openFirewall = true`, the following ports are opened:
+When `openFirewall = true`, the following ports are opened (Valheim uses `port` and `port+1`; defaults 2456-2457):
 
 - TCP: `port`
-- UDP: `port`, `port+1`, `port+2`, `port+3`
+- UDP: `port`, `port+1`
 
 ## How It Works
 
@@ -86,6 +87,8 @@ nix flake check            # Build verification
 - **Unfree software** — `allowUnfree = true` is required in your nixpkgs config
 - **Runtime download** — Server binaries are fetched by SteamCMD on first start, not at build time
 - **Default password** — Change from `"changeme"` before deploying to production
+- **Password rules** — The server refuses to boot with a password shorter than 5 characters, or one that appears inside the world name. These are checked both at config-eval time (for `password`) and at runtime (for `passwordFile`)
+- **Password on the command line** — Valheim only accepts the password via `-password`, so it is visible in `ps`/`systemctl status` on the host regardless of `passwordFile`. `passwordFile` still keeps it out of your NixOS config and the Nix store
 - **x86_64 only** — Valheim server binaries are x86_64 Linux only
 - **Steam account** — Server downloads use anonymous login; no Steam account required
 - **Secrets management** — Use `passwordFile` with SOPS instead of hardcoding `password` in your NixOS configuration
@@ -95,6 +98,8 @@ nix flake check            # Build verification
 ```bash
 nix flake check       # Verify flake builds
 nix flake show .      # Inspect flake outputs
+nix fmt               # Format Nix files
+nix develop           # Dev shell with nixfmt, steamcmd, steam-run
 ```
 
 ## License
