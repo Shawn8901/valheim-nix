@@ -23,10 +23,20 @@ let
     # Ensure the server directory exists
     mkdir -p "$STEAM_SERVER_DIR"
 
-    # Check if server exists, if not download it
+    # Download (or update) the server binaries via SteamCMD
+    steamcmd_update() {
+      ${cfg.steamCmdPackage}/bin/steamcmd +login anonymous +force_install_dir "$STEAM_SERVER_DIR" +app_update 896660 validate +quit
+    }
+
+    # Download the server on first start, and optionally refresh it on every start
     if [ ! -f "$STEAM_SERVER_DIR/valheim_server.x86_64" ]; then
       echo "Valheim server not found, downloading via SteamCMD..."
-      ${cfg.steamCmdPackage}/bin/steamcmd +login anonymous +force_install_dir "$STEAM_SERVER_DIR" +app_update 896660 validate +quit
+      steamcmd_update
+    ${optionalString cfg.autoUpdate ''
+      else
+        echo "Checking for Valheim server updates via SteamCMD..."
+        steamcmd_update
+    ''}
     fi
 
     # SteamGameServer looks for steamclient.so under $HOME/.steam/sdk64
@@ -129,6 +139,12 @@ in
       type = types.int;
       default = 10;
       description = "Maximum number of players";
+    };
+
+    autoUpdate = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Run a SteamCMD update check (app_update 896660 validate) on every server start instead of only downloading when missing.";
     };
 
     openFirewall = mkOption {
