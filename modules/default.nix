@@ -48,6 +48,19 @@ let
         valheimPassword=$(cat "${cfg.passwordFile}");
       fi
     ''}
+
+    # Valheim refuses to boot with a short password, or one that appears in the world name
+    if [ "''${#valheimPassword}" -lt 5 ]; then
+      echo "ERROR: the server password must be at least 5 characters long" >&2
+      exit 1
+    fi
+    case "$valheimPassword" in
+      *"${cfg.worldName}"*)
+        echo "ERROR: the server password must not contain the world name" >&2
+        exit 1
+        ;;
+    esac
+
     exec ${pkgs.steam-run}/bin/steam-run ./valheim_server.x86_64 \
       -name "${cfg.serverName}" \
       -port ${toString cfg.port} \
@@ -89,9 +102,9 @@ in
     };
 
     passwordFile = mkOption {
-      type = types.nullOr types.path;
+      type = types.nullOr types.str;
       default = null;
-      description = "Path to a file containing the server password. Mutually exclusive with password.";
+      description = "Path to a file containing the server password. Mutually exclusive with password. Use a string path (as produced by sops) so the secret is not copied into the Nix store.";
     };
 
     public = mkOption {
@@ -132,6 +145,22 @@ in
   };
 
   config = mkIf cfg.enable {
+    # Input validation: the server silently refuses to boot on bad passwords
+    assertions = [
+      {
+        assertion = cfg.passwordFile == null || cfg.password == "changeme";
+        message = "services.valheim: `password` and `passwordFile` are mutually exclusive; leave `password` at its default when using `passwordFile`.";
+      }
+      {
+        assertion = cfg.passwordFile != null || lib.stringLength cfg.password >= 5;
+        message = "services.valheim: the server password must be at least 5 characters long.";
+      }
+      {
+        assertion = cfg.passwordFile != null || !lib.hasInfix cfg.password cfg.worldName;
+        message = "services.valheim: the server password must not appear inside the world name.";
+      }
+    ];
+
     # Create valheim user and group
     users.users.${valheimUser} = {
       isNormalUser = true;
