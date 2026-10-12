@@ -191,13 +191,11 @@ in
       gid = config.ids.gids.${valheimUser} or null;
     };
 
-    # Open firewall ports if requested
+    # Open firewall ports if requested (Valheim only uses port and port+1)
     networking.firewall.allowedTCPPorts = mkIf cfg.openFirewall [ cfg.port ];
     networking.firewall.allowedUDPPorts = mkIf cfg.openFirewall [
       cfg.port
       (cfg.port + 1)
-      (cfg.port + 2)
-      (cfg.port + 3)
     ];
 
     # Systemd service
@@ -209,7 +207,7 @@ in
       after = [ "network-online.target" ];
 
       serviceConfig = {
-        Type = "simple";
+        Type = "exec";
         User = "${valheimUser}";
         Group = "${valheimGroup}";
         # No WorkingDirectory: it may not exist yet on a fresh install, and the
@@ -217,9 +215,6 @@ in
         ExecStart = "${startScript}/bin/valheim-start";
         Restart = "always";
         RestartSec = 10;
-        Environment = [
-          "SteamAppId=892970"
-        ];
 
         # Directory creation and permissions
         StateDirectory = "valheim";
@@ -230,12 +225,7 @@ in
         PrivateTmp = true;
         ProtectSystem = "strict";
         ProtectHome = true;
-        ReadOnlyPaths = [ "/" ];
-        ReadWritePaths = [
-          "/var/lib/valheim"
-          "/tmp"
-          "/var/tmp"
-        ];
+        ReadWritePaths = [ "/var/lib/valheim" ];
       }
       # Make a root-only passwordFile (e.g. sops 0400) readable as a systemd credential
       // optionalAttrs (cfg.passwordFile != null) {
