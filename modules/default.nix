@@ -159,13 +159,16 @@ in
     systemd.services.valheim = {
       description = "Valheim Server";
       wantedBy = [ "multi-user.target" ];
-      after = [ "network.target" ];
+      # The first start downloads the server via SteamCMD, so wait for a real network
+      wants = [ "network-online.target" ];
+      after = [ "network-online.target" ];
 
       serviceConfig = {
         Type = "simple";
         User = "${valheimUser}";
         Group = "${valheimGroup}";
-        WorkingDirectory = "/var/lib/valheim/.local/share/Steam/Steamapps/common/Valheim dedicated server";
+        # No WorkingDirectory: it may not exist yet on a fresh install, and the
+        # start script cd's into it itself after (re)creating it.
         ExecStart = "${startScript}/bin/valheim-start";
         Restart = "always";
         RestartSec = 10;
