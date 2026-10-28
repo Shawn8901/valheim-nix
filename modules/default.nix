@@ -77,7 +77,7 @@ let
       -world "${cfg.worldName}" \
       -password "$valheimPassword" \
       -public ${if cfg.public then "1" else "0"} \
-      -nographics -batchmode -server -autostart \
+      -nographics -batchmode -autostart \
       -maxplayers ${toString cfg.maxPlayers} \
       ${optionalString cfg.enableSaveDebug "-savedebug"} \
       ${optionalString cfg.enableDebug "-debug"}
